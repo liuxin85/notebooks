@@ -1,15 +1,11 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> fb1ede1929ccc11dfacd8a6e3428f307eb173779
 import numpy as np
 import datetime
 import torch
+import random
 import matplotlib.pyplot as plt
 from torch.utils.tensorboard import SummaryWriter
 
 plt.style.use('fivethirtyeight')
-<<<<<<< HEAD
 
 class StepByStep(object):
     def __init__(self, model, loss_fn, optimizer):
@@ -17,17 +13,12 @@ class StepByStep(object):
         
         # We start by storing the arguments as attributes 
         # to use them later
-=======
-class StepByStep(object):
-    def __init__(self, model, loss_fn, optimizer):
->>>>>>> fb1ede1929ccc11dfacd8a6e3428f307eb173779
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         # Let's send the model to the specified device right away
         self.model.to(self.device)
-<<<<<<< HEAD
 
         # These attributes are defined here, but since they are
         # not informed at the moment of creation, we keep them None
@@ -35,18 +26,10 @@ class StepByStep(object):
         self.val_loader = None
         self.writer = None
         
-=======
-        # These attributes are defined here, but since they are
-        # not avaible at the moment of creation, we keep them None
-        self.train_loader = None
-        self.val_loader = None
-        self.writer = None
->>>>>>> fb1ede1929ccc11dfacd8a6e3428f307eb173779
         # These attributes are going to be computed internally
         self.losses = []
         self.val_losses = []
         self.total_epochs = 0
-<<<<<<< HEAD
 
         # Creates the train_step function for our model, 
         # loss function and optimizer
@@ -65,36 +48,17 @@ class StepByStep(object):
             self.model.to(self.device)
         except RuntimeError:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-=======
-        # Creates the train_step function for our model,
-        # loss function and optimizer
-        # Note: there are NO ARGS there! It makes use of the class attributes directly
-        self.train_step_fn = self._make_train_step_fn()
-        self.val_step_fn = self._make_val_step_fn()
-    
-
-    def to(self, device):
-        try:
-            self.device = device
-            self.model.to(self,device)
-        except RuntimeError:
-            self.device = ('cuda' if torch.cuda.is_available() else 'cpu')
->>>>>>> fb1ede1929ccc11dfacd8a6e3428f307eb173779
             print(f"Couldn't send it to {device}, sending it to {self.device} instead.")
             self.model.to(self.device)
 
     def set_loaders(self, train_loader, val_loader=None):
-<<<<<<< HEAD
         # This method allows the user to define which train_loader (and val_loader, optionally) to use
         # Both loaders are then assigned to attributes of the class
         # So they can be referred to later
-=======
->>>>>>> fb1ede1929ccc11dfacd8a6e3428f307eb173779
         self.train_loader = train_loader
         self.val_loader = val_loader
 
     def set_tensorboard(self, name, folder='runs'):
-<<<<<<< HEAD
         # This method allows the user to define a SummaryWriter to interface with TensorBoard
         suffix = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
         self.writer = SummaryWriter(f'{folder}/{name}_{suffix}')
@@ -139,30 +103,6 @@ class StepByStep(object):
 
         return perform_val_step_fn
             
-=======
-        suffix = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
-        self.writer = SummaryWriter(f'{folder}/{name}_{suffix}')
-    def _make_train_step_fn(self):
-        def perform_train_step_fn(x, y):
-            self.model.train()
-            yhat = self.model(x)
-            loss = self.loss_fn(yhat, y)
-            loss.backward()
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-            return loss.item()
-        return perform_train_step_fn
-
-    def _make_val_step_fn(self):
-        def perform_val_step_fn(x, y):
-            self.model.eval()
-            yhat = self.model(x)
-            loss = self.loss_fn(yhat, y)
-            return loss.item()
-
-        return perform_val_step_fn
-
->>>>>>> fb1ede1929ccc11dfacd8a6e3428f307eb173779
     def _mini_batch(self, validation=False):
         # The mini-batch can be used with both loaders
         # The argument `validation`defines which loader and 
@@ -195,7 +135,12 @@ class StepByStep(object):
         torch.backends.cudnn.benchmark = False    
         torch.manual_seed(seed)
         np.random.seed(seed)
-    
+        random.seed(seed)
+        try:
+            self.train_loader.sampler.generator.manual_seed(seed)
+        except AttributeError:
+            pass
+
     def train(self, n_epochs, seed=42):
         # To ensure reproducibility of the training process
         self.set_seed(seed)
@@ -230,11 +175,7 @@ class StepByStep(object):
         if self.writer:
             # Closes the writer
             self.writer.close()
-<<<<<<< HEAD
 
-=======
-    
->>>>>>> fb1ede1929ccc11dfacd8a6e3428f307eb173779
     def save_checkpoint(self, filename):
         # Builds dictionary with all elements for resuming training
         checkpoint = {'epoch': self.total_epochs,
@@ -287,3 +228,6 @@ class StepByStep(object):
         if self.train_loader and self.writer:
             x_sample, y_sample = next(iter(self.train_loader))
             self.writer.add_graph(self.model, x_sample.to(self.device))
+
+    def count_parameters(self):
+        return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
